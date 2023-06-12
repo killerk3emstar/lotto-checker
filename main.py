@@ -13,25 +13,18 @@ def handler():
     if res == 'y':
         exit(1)
 
-def getGame(gra, data):
-    url = f'https://www.lotto.pl/api/lotteries/draw-results/by-date-per-game?gameType={gra}&drawDate={data}&index=1&size=1&sort=DrawSystemId&order=DESC'
+def getGame(typGry, data):
+    url = f'https://www.lotto.pl/api/lotteries/draw-results/by-date-per-game?gameType={typGry}&drawDate={data}&index=1&size=1&sort=DrawSystemId&order=DESC'
     try:
         response = json.loads(requests.get(url, headers=HEADER).text)
     except:
         raise ValueError("Musisz wygenerować nowy header!")
 
-    try:
-        with open("test.json", "w") as file:
-            file.write(str(response))
-    except: pass
+    # print(response["items"][0]["results"][0])
 
-    # print(response)
-    # print(type(response))
+    return response["items"][0]["results"][0]
 
-    return response["items"][0]["results"]
-    # return type(url), url
-
-def setGames():
+def setGameType():
 
     gryTranslate = {
         1 : "Lotto",
@@ -40,17 +33,15 @@ def setGames():
     }
 
     while True:
-        print("Jakie gry chcesz sprawdzić?")
+        print("Jaką gry chcesz sprawdzić?")
         try:
-            gry = [gryTranslate[int(i)] for i in input("ROZDZIEL SPACJĄ\n\n1 - Lotto\n2 - Lotto Plus\n3 - Mini\n> ").split(" ")]
-            if len(gry) > 0:
-                return gry
-            print("WYBIERZ PRZYNAJMIEJ JEDNĄ GRĘ!!!")
+            gra = gryTranslate[int(input("1 - Lotto\n2 - Lotto Plus\n3 - Mini\n> "))]
+            return gra
         except:
-            print("WYBIERZ PRZYNAJMIEJ JEDNĄ GRĘ!!!")
+            print("WYBIERZ JEDNĄ GRĘ!!!")
             handler()
 
-def setDate():    
+def setDrawDate():    
 
     def checkIfDateExists(dateString):
         y, m, d = [int(i) for i in dateString.split("-")]
@@ -76,31 +67,55 @@ def setDate():
             print("NIEPOPRAWNA DATA!!!\n(pierwsze losowanie to 1957 01 27)\n")
             handler()
 
+def getUserNumbers(NumberOfGames):
+    userNumbers = []
+    def getOneSet():
+        while True:
+            try:
+                numbers = [int(i) for i in input("> ").split(" ")]
+                if len(set(numbers)) == 6 and len(numbers) == 6:
+                    return set(numbers)
+                print("NIEPOPRAWNE NUMERKI!!!")
+            except:
+                print("NIEPOPRAWNE NUMERKI!!!")
+                handler()
 
-def getUserNumbers():
-    
-    while True:
-        try:
-            numbers = [int(i) for i in input("WPROWADŹ SWOJE NUMERY\n(rozdziel spacją)\n\n> ").split(" ")]
-            if len(set(numbers)) == 6:
-                return numbers
-            print("NIEPOPRAWNE NUMERKI!!!")
-        except:
-            print("NIEPOPRAWNE NUMERKI!!!")
-            handler()
-    
-    return numbers
+    print("WPROWADŹ SWOJE NUMERY\n(rozdziel spacją, po wprowadzeniu jednego zakładu wciśnij enter)\n")
 
-def getLotto(game, plus: bool):
-    pass
+    for _ in range(NumberOfGames):
+        userNumbers.append(getOneSet())
 
-# gry = setGames()
-# data = setDate()
-# numbers = getUserNumbers()
+    return userNumbers
 
-# print(numbers)
-# print(getGame(gry[0], data))
+def displayLottoAndPlusResult(userNumbers, game):
+    def displayLine(userNumber, drawnNumbers):  
+            hit = userNumber & set(drawnNumbers)
+            for number in sorted(userNumber):
+                if number in hit:
+                    print('\x1b[6;30;42m' + str(number).zfill(2) + '\x1b[0m', end="  ")
+                else:
+                    print(str(number).zfill(2), end="  ")
+            print(f'Trafienia: {len(hit)}')
+
+    drawSystemId = game["drawSystemId"]
+    drawDate = game["drawDate"][:10]
+    gameType = game["gameType"]
+    winningNumbers = sorted(set(game["resultsJson"]))
+
+    print(f'Losowanie gry {gameType}, numer {str(drawSystemId)}, dnia {drawDate}')
+    print("  ".join(str(i).zfill(2) for i in winningNumbers))
+    print("".join("-" for _ in range(22)))
+
+    for userNumber in userNumbers:
+        displayLine(userNumber, winningNumbers)
 
 
+typGry = setGameType()
+data = setDrawDate()
+howManyGames = int(input("Ile zakładów chcesz sprawdzić?\n> "))
+numbers = getUserNumbers(howManyGames)
+gra = getGame(typGry, data)
 
-# print(gry, data)
+displayLottoAndPlusResult(numbers, gra)
+
+
