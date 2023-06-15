@@ -110,9 +110,23 @@ def displayLottoAndPlusResult(userNumbers, game):
         displayLine(userNumber, winningNumbers)
 
 
+def getNumberOfGamesToCheck():
+    while True:
+        try:
+            howManyGames = int(input("Ile zakładów chcesz sprawdzić?\n> "))
+            if howManyGames > 0:
+                return howManyGames
+            print("WYBIERZ CONAJMNIEJ JEDEN ZAKŁAD DO SPRAWDZENIA!\n")
+        except:
+            print("WYBIERZ CONAJMNIEJ JEDEN ZAKŁAD DO SPRAWDZENIA!\n")
+            handler()
+    
+    return howManyGames
+
+
 typGry = setGameType()
 data = setDrawDate()
-howManyGames = int(input("Ile zakładów chcesz sprawdzić?\n> "))
+howManyGames = getNumberOfGamesToCheck()
 numbers = getUserNumbers(howManyGames)
 gra = getGame(typGry, data)
 
